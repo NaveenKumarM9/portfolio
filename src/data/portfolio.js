@@ -14,8 +14,8 @@ export const portfolio = {
   links: {
     github: "https://github.com/NaveenKumarM9",
     linkedin: "https://www.linkedin.com/in/naveen-kumar-1b83a4205/",
-    email: null,
-    phone: null,
+    email: "naveenk.dev11@gmail.com",
+    phone: "+1 (630) 634-2111",
   },
   coreStack: [
     "Java",
