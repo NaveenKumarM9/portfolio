@@ -1,9 +1,13 @@
 name: Deploy
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -47,3 +51,5 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./dist
+          publish_branch: gh-pages
+          enable_jekyll: false

@@ -11,6 +11,7 @@ lerna-debug.log*
 .claude
 
 .expo
+.openai
 
 node_modules
 dist
