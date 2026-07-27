@@ -1,380 +1,825 @@
-import { useState, useEffect, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { Link } from "react-router-dom";
-
 import {
-  IconHome2,
+  IconArrowDown,
+  IconArrowUpRight,
   IconBriefcase,
-  IconFolder,
-  IconTool,
-  IconSchool,
-  IconMail,
-  IconCertificate,
-  IconMenu2,
-  IconX,
-  IconFileDownload,
   IconBrandGithub,
   IconBrandLinkedin,
-  IconArrowUpRight,
+  IconChartBar,
+  IconCode,
+  IconDatabase,
+  IconFolder,
+  IconHome2,
+  IconMail,
   IconMapPin,
-  IconTrophy,
+  IconMenu2,
+  IconPhone,
+  IconSchool,
+  IconTool,
+  IconX,
 } from "@tabler/icons-react";
+import {
+  caseStudies,
+  education,
+  experiences,
+  industries,
+  metrics,
+  navItems,
+  portfolio,
+  projects,
+  skillGroups,
+} from "../data/portfolio";
 
-/* ================================================================
-   SITE DATA — edit content here, not inside the components
-   ================================================================ */
-const asset = (path) => import.meta.env.BASE_URL + path;
-
-const LINKS = {
-  github: "https://rebrand.ly/adpth",
-  linkedin: "https://rebrand.ly/linkedinLnk",
-  email: "tharun14714@gmail.com",
+const navIcons = {
+  home: IconHome2,
+  experience: IconBriefcase,
+  impact: IconChartBar,
+  "case-studies": IconDatabase,
+  projects: IconFolder,
+  skills: IconTool,
+  education: IconSchool,
+  contact: IconMail,
 };
 
-const NAV_ITEMS = [
-  { id: "home", label: "Home", icon: IconHome2 },
-  { id: "experience", label: "Experience", icon: IconBriefcase },
-  { id: "projects", label: "Projects", icon: IconFolder },
-  { id: "skills", label: "Skills", icon: IconTool },
-  { id: "certifications", label: "Certs", icon: IconCertificate },
-  { id: "education", label: "Education", icon: IconSchool },
-  { id: "contact", label: "Contact", icon: IconMail },
-];
-
-const CORE_STACK = [
-  "React",
-  "TypeScript",
-  "Next.js",
-  "Node.js",
-  "Python",
-  "FastAPI",
-  "PostgreSQL",
-  "AWS",
-];
-
-const EXPERIENCES = [
-  {
-    title: "Graduate Research Assistant",
-    company: "Purdue University Northwest",
-    bullets: [
-      "Designed and built an interactive 3D aerospace learning platform end-to-end, serving 150+ students across engineering curricula",
-      "Architected a responsive React frontend integrating X3D/X3DOM graphics engines, reducing 3D model loading latency by 25% through asset optimization (GLB/GLTF parsing)",
-      "Created a library of reusable UI components, cutting laboratory module creation time for faculty by 40%",
-      "Partnered directly with faculty and researchers to ship reliable, deployment-ready software under tight academic deadlines",
-    ],
-    date: "Oct 2025 – Jan 2026",
-    link: "https://www.pnw.edu/",
-  },
-  {
-    title: "Associate Software Engineer",
-    company: "Accenture",
-    bullets: [
-      "Engineered React and Node.js enterprise features on Agile delivery teams, delivering secure, high-compliance applications for global clients",
-      "Cut client-side latency by 20% by implementing code splitting, lazy loading, and state-management optimizations",
-      "Improved API performance by 30% through SQL query indexing and Redis database caching",
-      "Owned CI/CD deployment workflows and resolved live production issues, reducing deployment failures by 15%",
-    ],
-    date: "Feb 2024 – Aug 2024",
-    link: "https://www.accenture.com/",
-  },
-  {
-    title: "Full Stack Engineer",
-    company: "Bhagala Solutions",
-    bullets: [
-      "Co-engineered the core product architecture from MVP to initial launch, establishing front-end (React) and back-end (Node.js) codebase foundations",
-      "Designed database schemas and optimized REST API endpoints, reducing data fetch latency for early users",
-      "Collaborated directly with the founding team to translate product concepts and wireframes into interactive user interfaces",
-      "Maintained strict data security standards and intellectual property compliance during rapid product development phases",
-    ],
-    date: "Jan 2023 – Jan 2024",
-    link: "https://bhagala.com/",
-  },
-];
-
-const PROJECT_CATEGORIES = ["All", "AI & Data", "Web & SaaS", "Mobile Apps", "EdTech"];
-
-const PROJECTS = [
-  {
-    title: "TaskPilot AI",
-    role: "Solo build",
-    desc: "An autonomous AI task-planning SaaS that decomposes complex user goals into dynamically scheduled sub-tasks.",
-    impact: "Implemented structured LLM outputs using Gemini API and dynamic dependency graphs to auto-schedule tasks. Built with Next.js, FastAPI, and PostgreSQL.",
-    date: "Apr – May 2026",
-    image: "taskpilot_thumbnail.png",
-    link: "https://github.com/adpth/TaskPilot-AI",
-    featured: true,
-    status: "Production",
-    tags: ["AI SaaS"],
-    tech: ["Next.js", "React 19", "FastAPI", "PostgreSQL", "Gemini AI"],
-    category: ["Web & SaaS", "AI & Data"],
-  },
-  {
-    title: "X3D-VR for Aerospace",
-    role: "Graduate research",
-    desc: "Interactive browser-based 3D visualization platform for aerospace engineering curricula.",
-    impact: "Directly adopted by the Aerospace department at Purdue NW. Rendered 3D GLB turbine models dynamically using X3DOM and React.",
-    date: "Oct 2025 – Jan 2026",
-    image: "aerospace_thumbnail_final.png",
-    link: "https://xreal-xperienz.org/x3d/beta/index.html",
-    featured: true,
-    status: "Live",
-    tags: ["EdTech"],
-    tech: ["X3D", "X3DOM", "GLB", "React"],
-    category: ["Web & SaaS", "EdTech"],
-  },
-  {
-    title: "Fudoo",
-    role: "Co-founder",
-    desc: "A real-time, multi-vendor food ordering mobile application shipped to the Google Play Store.",
-    impact: "Co-founded and scaled the mobile app to 500+ active student users. Implemented Firebase Realtime DB and AWS microservices to cut checkout transaction latency by 30%.",
-    date: "Jun 2023 – Aug 2024",
-    image: "fudoo_thumbnail.png",
-    link: "https://play.google.com/store/apps/details?id=com.kitsw.canteen",
-    featured: true,
-    status: "Play Store",
-    tags: ["Production"],
-    tech: ["React Native", "Firebase", "Node.js", "AWS"],
-    category: ["Mobile Apps"],
-  },
-  {
-    title: "TSRTC Medaram Jathara",
-    role: "Lead developer",
-    desc: "Government-backed transit and navigation app for one of India's largest religious gatherings (10M+ attendees).",
-    impact: "Served 15,000+ active commuters with real-time GPS tracking. Awarded official recognition by the State Transport Corporation (TSRTC).",
-    date: "Jan – Feb 2022",
-    image: "tsrtc_logo.webp",
-    link: "https://rebrand.ly/fphf08l",
-    featured: true,
-    status: "Govt. recognized",
-    tags: ["Public Utility"],
-    tech: ["Java", "Firebase", "MySQL", "Google Cloud"],
-    category: ["Mobile Apps"],
-  },
-  {
-    title: "FeedbackFlow",
-    role: "Solo build",
-    desc: "Web platform for teams to collect, manage, and embed user feedback widgets.",
-    impact: "Reduced feedback collection setup from hours to minutes using a custom script embed.",
-    date: "Sep – Dec 2024",
-    image: "feedback_flow_logo.png",
-    link: "",
-    tags: ["SaaS"],
-    tech: ["React.js", "Node.js", "MongoDB"],
-    category: ["Web & SaaS"],
-  },
-  {
-    title: "ShortLnk",
-    role: "Solo build",
-    desc: "Production-ready URL shortener service built with the MERN stack.",
-    impact: "Deployed and working end-to-end with optimized redirects and custom analytics dashboard.",
-    date: "2024",
-    image: "",
-    link: "https://github.com/adpth/ShortLnk",
-    tags: ["Full-stack", "Utility"],
-    tech: ["Node.js", "MongoDB", "React.js", "Express.js"],
-    category: ["Web & SaaS"],
-  },
-  {
-    title: "Wevento",
-    role: "Co-developer",
-    desc: "Location-based events discovery mobile app using native Android technology.",
-    impact: "Connected users to nearby events in real time with Google Maps API and Firebase.",
-    date: "2023",
-    image: "",
-    link: "",
-    tags: ["Mobile App"],
-    tech: ["Kotlin", "Firebase", "PHP", "MySQL"],
-    category: ["Mobile Apps"],
-  },
-  {
-    title: "AI Sales Outreach Assistant",
-    role: "Solo build",
-    desc: "Automated lead research and personalized outreach workflows.",
-    impact: "Architecting multi-agent orchestration via Python and LLMs; backend schema 80% complete.",
-    date: "2026",
-    image: "",
-    link: "",
-    tags: ["AI Agent", "Automation"],
-    tech: ["Node.js", "Python", "LLMs"],
-    category: ["AI & Data"],
-    isWip: true,
-  },
-  {
-    title: "LLM-Powered Data Analyst",
-    role: "Solo build",
-    desc: "AI-powered data analysis and report generation platform.",
-    impact: "Developing AI-powered analytics playground; frontend mockups and FastAPI routing completed.",
-    date: "2026",
-    image: "",
-    link: "",
-    tags: ["AI Engineering", "Data"],
-    tech: ["React", "TypeScript", "FastAPI", "OpenAI"],
-    category: ["AI & Data"],
-    isWip: true,
-  },
-];
-
-const SKILL_GROUPS = [
-  {
-    title: "Frontend",
-    skills: ["React.js", "Next.js", "TypeScript", "JavaScript (ES6+)", "Tailwind CSS", "Framer Motion", "HTML5 / CSS3"],
-    core: ["React.js", "Next.js", "TypeScript"],
-  },
-  {
-    title: "Backend & APIs",
-    skills: ["Node.js", "Express.js", "FastAPI", "Python", "Java", "REST APIs"],
-    core: ["Node.js", "FastAPI"],
-  },
-  {
-    title: "Mobile",
-    skills: ["React Native", "Kotlin", "Android SDK", "Play Store delivery"],
-    core: ["React Native"],
-  },
-  {
-    title: "Data & Cloud",
-    skills: ["PostgreSQL", "MongoDB", "MySQL", "Supabase", "Firebase", "AWS", "Google Cloud"],
-    core: ["PostgreSQL", "AWS"],
-  },
-  {
-    title: "AI Engineering",
-    skills: ["OpenAI", "Gemini AI", "LLM integration", "Prompt Engineering", "Pandas"],
-    core: ["LLM integration"],
-  },
-  {
-    title: "DevOps & Tooling",
-    skills: ["Git / GitHub", "Docker", "CI/CD", "Postman", "Vercel", "Render"],
-    core: ["CI/CD"],
-  },
-];
-
-const CERTIFICATIONS = [
-  {
-    title: "Android Basics in Kotlin",
-    issuer: "Google",
-    desc: "Android fundamentals, UI components, and app architecture using Kotlin.",
-    date: "Oct 2022",
-    link: "https://smartinternz.com/internships/google_stu_certificates/7515989d1c2f94c0cf8c5e4aefd3d12b",
-  },
-  {
-    title: "Google Cloud Big Data & ML Fundamentals",
-    issuer: "Google Cloud · Coursera",
-    desc: "Data pipelines, cloud analytics, and ML workflows using Vertex AI.",
-    date: "Aug 2022",
-    link: "https://www.coursera.org/account/accomplishments/verify/A8HQQ6Z5L6R9",
-  },
-];
-
-const EDUCATION = [
-  {
-    degree: "M.S. in Computer Science",
-    school: "Purdue University Northwest",
-    date: "Aug 2024 – May 2026",
-    bullets: [
-      "Key Coursework: Distributed Systems, Advanced Algorithms, Artificial Intelligence, Database Management Systems",
-      "Graduate Research Assistant — built the Aerospace/X3D educational platform",
-      "Designed & launched FeedbackFlow and ShortLnk (MERN-based SaaS tools)",
-    ],
-  },
-  {
-    degree: "B.Tech in Computer Science & Engineering",
-    school: "KITSW (Kakatiya Institute of Technology & Science)",
-    date: "June 2019 – June 2023",
-    bullets: [
-      "President of the Computer Science Engineering Association (CSEA)",
-      "Co-founded Fudoo — production mobile app on Google Play Store",
-      "Developed TSRTC Medaram Jathara app — awarded by the government",
-    ],
-  },
-];
-
-/* ================================================================
-   ANIMATION VARIANTS
-   ================================================================ */
 const fadeUp = {
-  hidden: { opacity: 0, y: 24 },
-  visible: (i = 0) => ({
+  hidden: { opacity: 0, y: 22 },
+  visible: (index = 0) => ({
     opacity: 1,
     y: 0,
-    transition: { delay: i * 0.08, duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] },
+    transition: {
+      delay: index * 0.05,
+      duration: 0.45,
+      ease: [0.25, 0.46, 0.45, 0.94],
+    },
   }),
 };
 
-const staggerContainer = {
+const stagger = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
-    transition: { staggerChildren: 0.08, delayChildren: 0.1 },
+    transition: { staggerChildren: 0.06, delayChildren: 0.05 },
   },
 };
 
-const sectionViewport = { once: true, margin: "-80px" };
+const sectionViewport = { once: true, margin: "-70px" };
 
-/* ================================================================
-   MAIN LAYOUT
-   ================================================================ */
+const SectionHeading = ({ kicker, children, sub }) => (
+  <div className="mb-8">
+    <p className="kicker mb-2">{kicker}</p>
+    <h2 className="heading-font text-2xl sm:text-3xl font-bold tracking-tight text-[#f4f4f5]">
+      {children}
+    </h2>
+    {sub && (
+      <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[#71717a]">
+        {sub}
+      </p>
+    )}
+  </div>
+);
+
+const SocialLinks = ({ compact = false }) => (
+  <div className={`flex items-center ${compact ? "gap-4" : "gap-3"}`}>
+    <a
+      href={portfolio.links.github}
+      target="_blank"
+      rel="noreferrer"
+      aria-label="Naveen Kumar on GitHub"
+      className="text-[#71717a] transition-colors hover:text-[#f4f4f5] focus-ring"
+    >
+      <IconBrandGithub size={compact ? 18 : 20} />
+    </a>
+    <a
+      href={portfolio.links.linkedin}
+      target="_blank"
+      rel="noreferrer"
+      aria-label="Naveen Kumar on LinkedIn"
+      className="text-[#71717a] transition-colors hover:text-[#7ab2ff] focus-ring"
+    >
+      <IconBrandLinkedin size={compact ? 18 : 20} />
+    </a>
+  </div>
+);
+
+const SidebarContent = ({
+  activeSection,
+  onNavigate,
+  onClose,
+  isMobile = false,
+}) => (
+  <div className="flex h-full flex-col px-5 py-7">
+    {isMobile && (
+      <div className="mb-4 flex justify-end">
+        <button
+          onClick={onClose}
+          className="cursor-pointer rounded-lg p-2 transition-colors hover:bg-[#1a1a1a] focus-ring"
+          aria-label="Close navigation menu"
+        >
+          <IconX size={18} />
+        </button>
+      </div>
+    )}
+
+    <div className="mb-7 flex flex-col items-center text-center">
+      <img
+        src={portfolio.image}
+        alt={`${portfolio.name} profile`}
+        className="mb-3 h-24 w-24 rounded-full object-cover ring-2 ring-[#2563eb]/25 ring-offset-2 ring-offset-[#0a0a0a]"
+      />
+      <h2 className="heading-font text-base font-bold">{portfolio.name}</h2>
+      <p className="mt-0.5 text-xs font-medium text-[#a1a1aa]">
+        {portfolio.shortTitle}
+      </p>
+      <div className="mt-1.5 flex items-center gap-1 text-[10px] text-[#5c5c66]">
+        <IconMapPin size={11} />
+        <span>{portfolio.location}</span>
+      </div>
+    </div>
+
+    <nav className="flex-1" aria-label="Portfolio navigation">
+      <ul className="flex flex-col gap-0.5">
+        {navItems.map(({ id, label }) => {
+          const Icon = navIcons[id];
+          return (
+            <li key={id}>
+              <button
+                onClick={() => onNavigate(id)}
+                className={`sidebar-nav-link w-full ${
+                  activeSection === id ? "active" : ""
+                }`}
+                aria-current={activeSection === id ? "page" : undefined}
+              >
+                <span className="nav-indicator" />
+                <Icon size={15} className="shrink-0" />
+                <span>{label}</span>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </nav>
+
+    <a
+      href={portfolio.links.linkedin}
+      target="_blank"
+      rel="noreferrer"
+      className="btn-primary mb-5 mt-6 w-full text-xs uppercase tracking-wide"
+    >
+      <IconBrandLinkedin size={15} />
+      Connect on LinkedIn
+    </a>
+
+    <div className="flex items-center justify-between border-t border-[#1e1e1e] pt-4">
+      <SocialLinks compact />
+      <span className="font-mono text-[9px] uppercase tracking-[0.15em] text-[#3f3f46]">
+        Enterprise engineer
+      </span>
+    </div>
+  </div>
+);
+
+const HeroSection = ({ onNavigate }) => (
+  <section id="home" className="flex min-h-[92vh] items-center py-16 sm:py-20">
+    <motion.div
+      initial="hidden"
+      animate="visible"
+      variants={stagger}
+      className="w-full"
+    >
+      <motion.div
+        variants={fadeUp}
+        className="mb-5 inline-flex items-center gap-2 rounded-full border border-[#2563eb]/20 bg-[#2563eb]/10 px-3 py-1.5"
+      >
+        <span className="h-1.5 w-1.5 rounded-full bg-[#60a5fa]" />
+        <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#7ab2ff]">
+          {portfolio.experience} · enterprise software delivery
+        </span>
+      </motion.div>
+
+      <motion.p
+        variants={fadeUp}
+        className="heading-font text-lg font-semibold text-[#7ab2ff] sm:text-xl"
+      >
+        Hi, I’m {portfolio.name}.
+      </motion.p>
+      <motion.h1
+        variants={fadeUp}
+        className="heading-font mt-3 max-w-4xl text-4xl font-bold leading-[1.06] tracking-[-0.04em] text-[#f4f4f5] sm:text-6xl lg:text-7xl"
+      >
+        I build secure systems that{" "}
+        <span className="gradient-text">perform at enterprise scale.</span>
+      </motion.h1>
+      <motion.p
+        variants={fadeUp}
+        className="mt-6 max-w-3xl text-base leading-relaxed text-[#a1a1aa] sm:text-lg"
+      >
+        {portfolio.headline}
+      </motion.p>
+      <motion.p
+        variants={fadeUp}
+        className="mt-3 max-w-3xl text-sm leading-relaxed text-[#71717a] sm:text-base"
+      >
+        {portfolio.summary}
+      </motion.p>
+
+      <motion.div variants={fadeUp} className="mt-7 flex flex-wrap gap-2">
+        {portfolio.coreStack.map((item) => (
+          <span key={item} className="stack-chip">
+            {item}
+          </span>
+        ))}
+      </motion.div>
+
+      <motion.div variants={fadeUp} className="mt-9 flex flex-wrap gap-3">
+        <button
+          onClick={() => onNavigate("projects")}
+          className="btn-primary"
+        >
+          Explore my work
+          <IconArrowDown size={15} />
+        </button>
+        <a
+          href={portfolio.links.github}
+          target="_blank"
+          rel="noreferrer"
+          className="btn-secondary"
+        >
+          <IconBrandGithub size={16} />
+          GitHub profile
+        </a>
+      </motion.div>
+
+      <motion.div
+        variants={fadeUp}
+        className="mt-12 grid max-w-3xl grid-cols-2 gap-px overflow-hidden rounded-xl border border-[#1e1e1e] bg-[#1e1e1e] sm:grid-cols-4"
+      >
+        {[
+          ["6+", "years"],
+          ["4", "industries"],
+          ["22", "secure APIs"],
+          ["1.2M+", "records / batch"],
+        ].map(([value, label]) => (
+          <div key={label} className="bg-[#0e0e0e] px-4 py-4">
+            <p className="heading-font text-xl font-bold text-[#f4f4f5]">
+              {value}
+            </p>
+            <p className="mt-0.5 font-mono text-[9px] uppercase tracking-wider text-[#5c5c66]">
+              {label}
+            </p>
+          </div>
+        ))}
+      </motion.div>
+    </motion.div>
+  </section>
+);
+
+const ExperienceSection = () => (
+  <section id="experience" className="py-14">
+    <motion.div
+      variants={stagger}
+      initial="hidden"
+      whileInView="visible"
+      viewport={sectionViewport}
+    >
+      <motion.div variants={fadeUp}>
+        <SectionHeading
+          kicker="experience"
+          sub="Enterprise delivery across banking, healthcare, insurance, and investment services."
+        >
+          Where I’ve made an impact
+        </SectionHeading>
+      </motion.div>
+
+      <div className="flex flex-col gap-3">
+        {experiences.map((experience, index) => (
+          <motion.article
+            key={`${experience.company}-${experience.date}`}
+            variants={fadeUp}
+            custom={index}
+            className="card-static p-5 sm:p-6"
+          >
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <h3 className="heading-font text-base font-bold text-[#f4f4f5]">
+                  {experience.role}
+                </h3>
+                <p className="mt-0.5 text-sm font-medium text-[#7ab2ff]">
+                  {experience.company}
+                </p>
+                {experience.client && (
+                  <p className="mt-1 font-mono text-[10px] uppercase tracking-wide text-[#71717a]">
+                    {experience.client}
+                  </p>
+                )}
+              </div>
+              <div className="shrink-0 text-left sm:text-right">
+                <p className="font-mono text-xs text-[#71717a]">
+                  {experience.date}
+                </p>
+                {experience.location && (
+                  <p className="mt-1 text-[10px] text-[#5c5c66]">
+                    {experience.location}
+                  </p>
+                )}
+              </div>
+            </div>
+            <p className="mt-4 text-sm leading-relaxed text-[#a1a1aa]">
+              {experience.summary}
+            </p>
+            <ul className="mt-4 grid gap-2">
+              {experience.bullets.map((bullet) => (
+                <li
+                  key={bullet}
+                  className="flex items-start gap-2 text-sm leading-relaxed text-[#71717a]"
+                >
+                  <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-[#2563eb]" />
+                  <span>{bullet}</span>
+                </li>
+              ))}
+            </ul>
+            <div className="mt-5 flex flex-wrap gap-1.5">
+              {experience.tech.map((tech) => (
+                <span key={tech} className="tag tag-neutral">
+                  {tech}
+                </span>
+              ))}
+            </div>
+          </motion.article>
+        ))}
+      </div>
+
+      <motion.div variants={fadeUp} className="mt-7">
+        <Link
+          to="/archive/achievements"
+          className="group inline-flex items-center gap-1.5 text-sm font-semibold text-[#a1a1aa] transition-colors hover:text-[#7ab2ff] focus-ring"
+        >
+          View career timeline
+          <IconArrowUpRight
+            size={14}
+            className="transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
+          />
+        </Link>
+      </motion.div>
+    </motion.div>
+  </section>
+);
+
+const ImpactSection = () => (
+  <section id="impact" className="py-14">
+    <motion.div
+      variants={stagger}
+      initial="hidden"
+      whileInView="visible"
+      viewport={sectionViewport}
+    >
+      <motion.div variants={fadeUp}>
+        <SectionHeading
+          kicker="measurable impact"
+          sub="Selected scale and delivery signals from production engineering engagements."
+        >
+          Outcomes, not just output
+        </SectionHeading>
+      </motion.div>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        {metrics.map((metric, index) => (
+          <motion.div
+            key={metric.label}
+            variants={fadeUp}
+            custom={index}
+            className="card-static min-h-36 p-5"
+          >
+            <p className="heading-font text-3xl font-bold text-[#f4f4f5] sm:text-4xl">
+              {metric.value}
+            </p>
+            <p className="mt-3 text-xs leading-relaxed text-[#71717a]">
+              {metric.label}
+            </p>
+          </motion.div>
+        ))}
+      </div>
+      <motion.div variants={fadeUp} className="mt-6 flex flex-wrap gap-2">
+        {industries.map((industry) => (
+          <span key={industry} className="tag tag-accent">
+            {industry}
+          </span>
+        ))}
+      </motion.div>
+    </motion.div>
+  </section>
+);
+
+const CaseStudiesSection = () => (
+  <section id="case-studies" className="py-14">
+    <motion.div
+      variants={stagger}
+      initial="hidden"
+      whileInView="visible"
+      viewport={sectionViewport}
+    >
+      <motion.div variants={fadeUp}>
+        <SectionHeading
+          kicker="professional case studies"
+          sub="High-level, résumé-approved views of enterprise initiatives. Proprietary implementation details remain private."
+        >
+          Complex systems, simplified
+        </SectionHeading>
+      </motion.div>
+      <div className="grid gap-3 lg:grid-cols-3">
+        {caseStudies.map((study, index) => (
+          <motion.article
+            key={study.title}
+            variants={fadeUp}
+            custom={index}
+            className="card-static flex h-full flex-col p-5"
+          >
+            <p className="font-mono text-[9px] uppercase tracking-[0.13em] text-[#7ab2ff]">
+              {study.eyebrow}
+            </p>
+            <h3 className="heading-font mt-3 text-lg font-bold leading-snug text-[#f4f4f5]">
+              {study.title}
+            </h3>
+            <p className="mt-3 text-sm leading-relaxed text-[#71717a]">
+              {study.description}
+            </p>
+            <div className="mt-5 grid gap-2">
+              {study.metrics.map((item) => (
+                <div
+                  key={item}
+                  className="rounded-lg border border-[#1e1e1e] bg-[#0d0d0d] px-3 py-2 text-xs font-medium text-[#a1a1aa]"
+                >
+                  {item}
+                </div>
+              ))}
+            </div>
+            <div className="mt-auto flex flex-wrap gap-1.5 pt-5">
+              {study.tech.map((tech) => (
+                <span key={tech} className="tag tag-neutral">
+                  {tech}
+                </span>
+              ))}
+            </div>
+          </motion.article>
+        ))}
+      </div>
+    </motion.div>
+  </section>
+);
+
+const ProjectCard = ({ project, index }) => (
+  <motion.article
+    variants={fadeUp}
+    custom={index}
+    className="card-static group flex h-full flex-col overflow-hidden"
+  >
+    <div className="project-media">
+      <div
+        className="heading-font flex h-20 w-20 items-center justify-center rounded-2xl border border-[#2563eb]/25 bg-[#2563eb]/10 text-2xl font-bold tracking-tight text-[#7ab2ff] transition-transform duration-300 group-hover:scale-105"
+        aria-hidden="true"
+      >
+        {project.mark}
+      </div>
+      <span className="media-status">{project.type}</span>
+    </div>
+    <div className="flex flex-1 flex-col p-5">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h3 className="heading-font text-lg font-bold text-[#f4f4f5]">
+            {project.title}
+          </h3>
+          <p className="mt-0.5 text-xs font-medium text-[#7ab2ff]">
+            {project.subtitle}
+          </p>
+        </div>
+        <span className="shrink-0 font-mono text-[10px] text-[#5c5c66]">
+          {project.year}
+        </span>
+      </div>
+      <p className="mt-4 text-sm leading-relaxed text-[#a1a1aa]">
+        {project.description}
+      </p>
+      <p className="mt-3 text-xs leading-relaxed text-[#71717a]">
+        <span className="font-mono text-[9px] uppercase tracking-wider text-[#7ab2ff]">
+          Outcome
+        </span>{" "}
+        {project.impact}
+      </p>
+      <div className="mt-5 flex flex-wrap gap-1.5">
+        {project.tech.map((tech) => (
+          <span key={tech} className="tag tag-neutral">
+            {tech}
+          </span>
+        ))}
+      </div>
+      {project.link && (
+        <a
+          href={project.link}
+          target="_blank"
+          rel="noreferrer"
+          className="group/link mt-auto inline-flex items-center gap-1.5 pt-6 text-sm font-semibold text-[#7ab2ff] focus-ring"
+        >
+          <IconBrandGithub size={15} />
+          {project.linkLabel}
+          <IconArrowUpRight
+            size={14}
+            className="transition-transform group-hover/link:-translate-y-0.5 group-hover/link:translate-x-0.5"
+          />
+        </a>
+      )}
+    </div>
+  </motion.article>
+);
+
+const ProjectsSection = () => (
+  <section id="projects" className="py-14">
+    <motion.div
+      variants={stagger}
+      initial="hidden"
+      whileInView="visible"
+      viewport={sectionViewport}
+    >
+      <motion.div variants={fadeUp}>
+        <SectionHeading
+          kicker="personal projects"
+          sub="Selected independent work across application engineering, data analytics, and secure multi-tier architecture."
+        >
+          Built beyond the day job
+        </SectionHeading>
+      </motion.div>
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+        {projects.map((project, index) => (
+          <ProjectCard key={project.title} project={project} index={index} />
+        ))}
+      </div>
+      <motion.p
+        variants={fadeUp}
+        className="mt-5 text-xs leading-relaxed text-[#5c5c66]"
+      >
+        Source is linked only where a public repository is confirmed.
+      </motion.p>
+      <motion.div variants={fadeUp} className="mt-5">
+        <Link
+          to="/archive/projects"
+          className="group inline-flex items-center gap-1.5 text-sm font-semibold text-[#a1a1aa] transition-colors hover:text-[#7ab2ff] focus-ring"
+        >
+          View project archive
+          <IconArrowUpRight
+            size={14}
+            className="transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
+          />
+        </Link>
+      </motion.div>
+    </motion.div>
+  </section>
+);
+
+const SkillsSection = () => (
+  <section id="skills" className="py-14">
+    <motion.div
+      variants={stagger}
+      initial="hidden"
+      whileInView="visible"
+      viewport={sectionViewport}
+    >
+      <motion.div variants={fadeUp}>
+        <SectionHeading
+          kicker="technical skills"
+          sub="A production-focused toolkit spanning application layers, cloud delivery, quality engineering, and operations."
+        >
+          Enterprise engineering toolkit
+        </SectionHeading>
+      </motion.div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        {skillGroups.map((group, index) => (
+          <motion.article
+            key={group.title}
+            variants={fadeUp}
+            custom={index}
+            className="card-static p-5"
+          >
+            <div className="mb-4 flex items-center gap-2">
+              <IconCode size={16} className="text-[#7ab2ff]" />
+              <h3 className="heading-font text-sm font-bold text-[#f4f4f5]">
+                {group.title}
+              </h3>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {group.skills.map((skill) => (
+                <span
+                  key={skill}
+                  className={`tag ${
+                    group.core.includes(skill) ? "tag-core" : "tag-neutral"
+                  }`}
+                >
+                  {skill}
+                </span>
+              ))}
+            </div>
+          </motion.article>
+        ))}
+      </div>
+    </motion.div>
+  </section>
+);
+
+const EducationSection = () => (
+  <section id="education" className="py-14">
+    <motion.div
+      variants={stagger}
+      initial="hidden"
+      whileInView="visible"
+      viewport={sectionViewport}
+    >
+      <motion.div variants={fadeUp}>
+        <SectionHeading kicker="education">Academic foundation</SectionHeading>
+      </motion.div>
+      {education.map((item, index) => (
+        <motion.article
+          key={item.degree}
+          variants={fadeUp}
+          custom={index}
+          className="card-static p-5 sm:p-6"
+        >
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="flex items-start gap-3">
+              <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#2563eb]/10">
+                <IconSchool size={19} className="text-[#7ab2ff]" />
+              </div>
+              <div>
+                <h3 className="heading-font text-base font-bold text-[#f4f4f5]">
+                  {item.degree}
+                </h3>
+                <p className="mt-1 text-sm font-medium text-[#7ab2ff]">
+                  {item.school}
+                </p>
+                <p className="mt-1 flex items-center gap-1 text-xs text-[#71717a]">
+                  <IconMapPin size={12} />
+                  {item.location}
+                </p>
+              </div>
+            </div>
+            <span className="font-mono text-xs text-[#5c5c66]">
+              {item.date}
+            </span>
+          </div>
+        </motion.article>
+      ))}
+    </motion.div>
+  </section>
+);
+
+const ContactCard = ({ href, icon: Icon, label, detail, external = false }) => (
+  <a
+    href={href}
+    target={external ? "_blank" : undefined}
+    rel={external ? "noreferrer" : undefined}
+    className="group flex items-center gap-4 rounded-xl border border-[#1e1e1e] p-5 transition-all hover:border-[#2563eb]/30 hover:bg-[#111] focus-ring"
+  >
+    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#2563eb]/10 transition-colors group-hover:bg-[#2563eb]/15">
+      <Icon size={18} className="text-[#7ab2ff]" />
+    </div>
+    <div className="min-w-0">
+      <p className="text-sm font-semibold text-[#f4f4f5]">{label}</p>
+      <p className="truncate text-xs text-[#71717a]">{detail}</p>
+    </div>
+    <IconArrowUpRight
+      size={14}
+      className="ml-auto text-[#5c5c66] transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
+    />
+  </a>
+);
+
+const ContactSection = () => {
+  const contactMethods = [
+    {
+      href: portfolio.links.linkedin,
+      icon: IconBrandLinkedin,
+      label: "LinkedIn",
+      detail: "Connect professionally",
+      external: true,
+    },
+    {
+      href: portfolio.links.github,
+      icon: IconBrandGithub,
+      label: "GitHub",
+      detail: "Explore public work",
+      external: true,
+    },
+    ...(portfolio.links.email
+      ? [
+          {
+            href: `mailto:${portfolio.links.email}`,
+            icon: IconMail,
+            label: "Email",
+            detail: portfolio.links.email,
+          },
+        ]
+      : []),
+    ...(portfolio.links.phone
+      ? [
+          {
+            href: `tel:${portfolio.links.phone.replace(/[^\d+]/g, "")}`,
+            icon: IconPhone,
+            label: "Phone",
+            detail: portfolio.links.phone,
+          },
+        ]
+      : []),
+  ];
+
+  return (
+    <section id="contact" className="py-14">
+      <motion.div
+        variants={stagger}
+        initial="hidden"
+        whileInView="visible"
+        viewport={sectionViewport}
+      >
+        <motion.div variants={fadeUp}>
+          <SectionHeading
+            kicker="contact"
+            sub="For engineering opportunities, enterprise platform work, or professional collaboration, connect through one of the channels below."
+          >
+            Let’s start a conversation
+          </SectionHeading>
+        </motion.div>
+        <motion.div
+          variants={fadeUp}
+          className="grid gap-3 sm:grid-cols-2"
+        >
+          {contactMethods.map((method) => (
+            <ContactCard key={method.label} {...method} />
+          ))}
+        </motion.div>
+      </motion.div>
+    </section>
+  );
+};
+
 const MainLayout = () => {
   const [activeSection, setActiveSection] = useState("home");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Scroll-spy
+  const observedIds = useMemo(() => navItems.map((item) => item.id), []);
+
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setActiveSection(entry.target.id);
-          }
+          if (entry.isIntersecting) setActiveSection(entry.target.id);
         });
       },
       { rootMargin: "-20% 0px -60% 0px", threshold: 0 }
     );
 
-    // Delay to ensure DOM elements exist
-    const timer = setTimeout(() => {
-      NAV_ITEMS.forEach(({ id }) => {
-        const el = document.getElementById(id);
-        if (el) observer.observe(el);
-      });
-    }, 100);
+    observedIds.forEach((id) => {
+      const element = document.getElementById(id);
+      if (element) observer.observe(element);
+    });
 
+    return () => observer.disconnect();
+  }, [observedIds]);
+
+  useEffect(() => {
+    document.body.style.overflow = mobileMenuOpen ? "hidden" : "";
     return () => {
-      clearTimeout(timer);
-      observer.disconnect();
+      document.body.style.overflow = "";
     };
-  }, []);
+  }, [mobileMenuOpen]);
 
   const scrollToSection = useCallback((sectionId) => {
-    const el = document.getElementById(sectionId);
-    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    const element = document.getElementById(sectionId);
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
     setMobileMenuOpen(false);
   }, []);
 
-  // Lock body scroll when mobile menu is open
-  useEffect(() => {
-    document.body.style.overflow = mobileMenuOpen ? "hidden" : "";
-    return () => { document.body.style.overflow = ""; };
-  }, [mobileMenuOpen]);
-
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-[#f4f4f5]">
-      <a href="#home" className="skip-link">Skip to content</a>
+      <a href="#home" className="skip-link">
+        Skip to content
+      </a>
 
-      {/* ===== Mobile Top Bar ===== */}
-      <header className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-[#0a0a0a]/95 backdrop-blur-lg border-b border-[#1e1e1e]">
-        <div className="flex items-center justify-between px-5 py-3.5">
+      <header className="fixed inset-x-0 top-0 z-50 border-b border-[#1e1e1e] bg-[#0a0a0a]/95 backdrop-blur-lg lg:hidden">
+        <div className="flex items-center justify-between px-5 py-3">
           <div className="flex items-center gap-3">
             <img
-              src={asset("tharun.png")}
-              alt="Tharun Pasupuleti"
-              className="w-8 h-8 rounded-full object-cover ring-1 ring-[#2563eb]/30"
+              src={portfolio.image}
+              alt=""
+              className="h-8 w-8 rounded-full object-cover"
             />
-            <span className="font-semibold text-sm tracking-tight heading-font">
-              Tharun Pasupuleti
-            </span>
+            <div>
+              <p className="heading-font text-sm font-semibold">
+                {portfolio.name}
+              </p>
+              <p className="text-[9px] text-[#71717a]">{portfolio.shortTitle}</p>
+            </div>
           </div>
           <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="p-2 rounded-lg hover:bg-[#1a1a1a] transition-colors duration-200 focus-ring cursor-pointer"
+            onClick={() => setMobileMenuOpen((open) => !open)}
+            className="cursor-pointer rounded-lg p-2 transition-colors hover:bg-[#1a1a1a] focus-ring"
             aria-label="Toggle navigation menu"
             aria-expanded={mobileMenuOpen}
           >
@@ -383,24 +828,24 @@ const MainLayout = () => {
         </div>
       </header>
 
-      {/* ===== Mobile Drawer ===== */}
       <AnimatePresence>
         {mobileMenuOpen && (
           <>
-            <motion.div
+            <motion.button
+              type="button"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden"
+              className="fixed inset-0 z-40 bg-black/65 backdrop-blur-sm lg:hidden"
               onClick={() => setMobileMenuOpen(false)}
+              aria-label="Close navigation menu"
             />
             <motion.div
               initial={{ x: "-100%" }}
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}
               transition={{ type: "spring", damping: 28, stiffness: 260 }}
-              className="fixed left-0 top-0 bottom-0 w-[280px] bg-[#0a0a0a] border-r border-[#1e1e1e] z-50 lg:hidden overflow-y-auto scrollbar-hide"
+              className="fixed bottom-0 left-0 top-0 z-50 w-[285px] overflow-y-auto border-r border-[#1e1e1e] bg-[#0a0a0a] lg:hidden"
             >
               <SidebarContent
                 activeSection={activeSection}
@@ -413,769 +858,48 @@ const MainLayout = () => {
         )}
       </AnimatePresence>
 
-      {/* ===== Desktop Sidebar ===== */}
-      <aside className="hidden lg:flex fixed left-0 top-0 bottom-0 w-[260px] flex-col bg-[#0a0a0a] border-r border-[#1e1e1e]/60 z-30">
+      <aside className="fixed bottom-0 left-0 top-0 z-30 hidden w-[270px] flex-col border-r border-[#1e1e1e]/70 bg-[#0a0a0a] lg:flex">
         <SidebarContent
           activeSection={activeSection}
           onNavigate={scrollToSection}
         />
       </aside>
 
-      {/* ===== Main Scrollable Content ===== */}
-      <main className="lg:ml-[260px] min-h-screen pt-14 lg:pt-0">
-        <div className="max-w-5xl mx-auto px-5 sm:px-8 lg:px-12 xl:px-16">
-          <HeroSection onContact={scrollToSection} />
+      <main className="min-h-screen pt-14 lg:ml-[270px] lg:pt-0">
+        <div className="mx-auto max-w-6xl px-5 sm:px-8 lg:px-12 xl:px-16">
+          <HeroSection onNavigate={scrollToSection} />
           <div className="section-divider" />
           <ExperienceSection />
+          <div className="section-divider" />
+          <ImpactSection />
+          <div className="section-divider" />
+          <CaseStudiesSection />
           <div className="section-divider" />
           <ProjectsSection />
           <div className="section-divider" />
           <SkillsSection />
-          <div className="section-divider" />
-          <CertificationsSection />
           <div className="section-divider" />
           <EducationSection />
           <div className="section-divider" />
           <ContactSection />
         </div>
 
-        {/* Footer */}
-        <footer className="border-t border-[#1e1e1e] mt-24">
-          <div className="max-w-5xl mx-auto px-5 sm:px-8 lg:px-12 xl:px-16 py-10 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <p className="text-[#5c5c66] text-xs">
-              © {new Date().getFullYear()} Tharun Pasupuleti
+        <footer className="mt-20 border-t border-[#1e1e1e]">
+          <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-5 py-9 sm:flex-row sm:px-8 lg:px-12 xl:px-16">
+            <p className="text-xs text-[#5c5c66]">
+              © {new Date().getFullYear()} {portfolio.name}
             </p>
+            <div className="flex items-center gap-3">
+              <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-[#3f3f46]">
+                Java · Cloud · Enterprise systems
+              </span>
+              <SocialLinks compact />
+            </div>
           </div>
         </footer>
       </main>
     </div>
   );
 };
-
-/* ================================================================
-   SIDEBAR — Shared between Desktop and Mobile
-   ================================================================ */
-const SidebarContent = ({ activeSection, onNavigate, onClose, isMobile }) => (
-  <div className="flex flex-col h-full px-5 py-7">
-    {isMobile && (
-      <div className="flex justify-end mb-4">
-        <button
-          onClick={onClose}
-          className="p-2 rounded-lg hover:bg-[#1a1a1a] transition-colors duration-200 focus-ring cursor-pointer"
-          aria-label="Close menu"
-        >
-          <IconX size={18} />
-        </button>
-      </div>
-    )}
-
-    {/* Profile */}
-    <div className="flex flex-col items-center text-center mb-8">
-      <div className="relative mb-3">
-        <img
-          src={asset("tharun.png")}
-          alt="Tharun Pasupuleti"
-          className="w-20 h-20 sm:w-24 sm:h-24 rounded-full object-cover ring-2 ring-[#2563eb]/20 ring-offset-2 ring-offset-[#0a0a0a]"
-        />
-        <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-[#34d399] rounded-full border-2 border-[#0a0a0a] status-pulse" />
-      </div>
-      <h2 className="text-base font-bold tracking-tight heading-font">
-        Tharun Pasupuleti
-      </h2>
-      <p className="text-xs text-[#a1a1aa] mt-0.5 font-medium">
-        Full-Stack Engineer
-      </p>
-      <div className="flex items-center gap-1 mt-1">
-        <IconMapPin size={11} className="text-[#5c5c66]" />
-        <p className="text-[10px] text-[#5c5c66] font-medium">
-          Indiana, US · Open to relocation
-        </p>
-      </div>
-    </div>
-
-    {/* Navigation */}
-    <nav className="flex-1" aria-label="Main navigation">
-      <ul className="flex flex-col gap-0.5">
-        {NAV_ITEMS.map(({ id, label, icon: Icon }) => (
-          <li key={id}>
-            <button
-              onClick={() => onNavigate(id)}
-              className={`sidebar-nav-link w-full ${activeSection === id ? "active" : ""}`}
-              aria-current={activeSection === id ? "true" : undefined}
-            >
-              <span className="nav-indicator" />
-              <Icon size={15} className="shrink-0" />
-              <span>{label}</span>
-            </button>
-          </li>
-        ))}
-      </ul>
-    </nav>
-
-    {/* LinkedIn CTA */}
-    <div className="mt-6 mb-5">
-      <a
-        href={LINKS.linkedin}
-        target="_blank"
-        rel="noreferrer"
-        className="btn-primary w-full uppercase tracking-wide text-xs"
-      >
-        <IconBrandLinkedin size={15} />
-        Connect on LinkedIn
-      </a>
-    </div>
-
-    {/* Social */}
-    <div className="flex items-center justify-center gap-5 pt-4 border-t border-[#1e1e1e]">
-      <a
-        href={LINKS.github}
-        target="_blank"
-        rel="noreferrer"
-        aria-label="GitHub"
-        className="text-[#5c5c66] hover:text-[#f4f4f5] transition-colors duration-200 focus-ring"
-      >
-        <IconBrandGithub size={18} />
-      </a>
-      <a
-        href={LINKS.linkedin}
-        target="_blank"
-        rel="noreferrer"
-        aria-label="LinkedIn"
-        className="text-[#5c5c66] hover:text-[#7ab2ff] transition-colors duration-200 focus-ring"
-      >
-        <IconBrandLinkedin size={18} />
-      </a>
-      <a
-        href={`mailto:${LINKS.email}`}
-        aria-label="Email"
-        className="text-[#5c5c66] hover:text-[#7ab2ff] transition-colors duration-200 focus-ring"
-      >
-        <IconMail size={18} />
-      </a>
-    </div>
-  </div>
-);
-
-/* ================================================================
-   HERO
-   ================================================================ */
-const HERO_STATS = [
-  { n: "10+", label: "Projects shipped" },
-  { n: "3", label: "Apps in production" },
-  { n: "1000s", label: "Real users served" },
-];
-
-const HeroSection = ({ onContact }) => (
-  <section id="home" className="pt-10 pb-16 lg:pt-20 lg:pb-20">
-    <motion.div
-      variants={staggerContainer}
-      initial="hidden"
-      animate="visible"
-      className="flex flex-col gap-6"
-    >
-
-
-      {/* Headline */}
-      <motion.div variants={fadeUp}>
-        <p className="kicker mb-4">full-stack engineer · ms cs, purdue northwest</p>
-        <h1 className="text-[2.5rem] sm:text-5xl lg:text-[3.5rem] font-bold tracking-tight leading-[1.08] heading-font">
-          Building products
-          <br />
-          <span className="gradient-text">that ship.</span>
-        </h1>
-      </motion.div>
-
-      {/* Bio */}
-      <motion.div variants={fadeUp} className="max-w-xl space-y-3">
-        <p className="text-[#a1a1aa] text-[15px] leading-relaxed">
-          I build across the whole stack — React front ends, Node.js and Python
-          APIs, mobile apps, and AI-powered systems. Recent{" "}
-          <span className="text-[#f4f4f5] font-medium">M.S. Computer Science</span>{" "}
-          graduate from Purdue University Northwest, previously Associate
-          Software Engineer at Accenture.
-        </p>
-        <p className="text-[#71717a] text-sm leading-relaxed">
-          I've shipped production apps on the Play Store, built a
-          government-recognized public utility, and launched AI SaaS platforms
-          end to end.
-        </p>
-      </motion.div>
-
-      {/* Core stack readout */}
-      <motion.div variants={fadeUp}>
-        <p className="text-[10px] font-mono text-[#5c5c66] uppercase tracking-[0.15em] mb-2">
-          Core stack
-        </p>
-        <ul className="flex flex-wrap gap-1.5" aria-label="Core technology stack">
-          {CORE_STACK.map((s) => (
-            <li key={s} className="stack-chip">{s}</li>
-          ))}
-        </ul>
-      </motion.div>
-
-      {/* Stats */}
-      <motion.div variants={fadeUp} className="flex flex-wrap gap-3">
-        {HERO_STATS.map((stat) => (
-          <div
-            key={stat.label}
-            className="flex items-baseline gap-2 px-4 py-2.5 rounded-lg bg-[#111] border border-[#1e1e1e] hover:border-[#2e2e2e] transition-colors duration-200"
-          >
-            <span className="text-xl metric text-[#7ab2ff]">{stat.n}</span>
-            <span className="text-[11px] text-[#71717a] font-medium uppercase tracking-wider">
-              {stat.label}
-            </span>
-          </div>
-        ))}
-      </motion.div>
-
-      {/* CTAs */}
-      <motion.div variants={fadeUp} className="flex flex-wrap items-center gap-3">
-        <a href={LINKS.linkedin} target="_blank" rel="noreferrer" className="btn-primary">
-          <IconBrandLinkedin size={16} />
-          Connect on LinkedIn
-        </a>
-        <button onClick={() => onContact("contact")} className="btn-secondary">
-          <IconMail size={16} />
-          Get in touch
-        </button>
-        <div className="flex items-center gap-4 sm:ml-2">
-          <a
-            href={LINKS.github}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center gap-1.5 text-sm text-[#a1a1aa] hover:text-[#f4f4f5] font-medium transition-colors duration-200 focus-ring"
-          >
-            <IconBrandGithub size={16} />
-            GitHub
-            <IconArrowUpRight size={13} className="text-[#5c5c66]" />
-          </a>
-        </div>
-      </motion.div>
-    </motion.div>
-  </section>
-);
-
-/* ================================================================
-   SECTION HEADING — Reusable
-   ================================================================ */
-const SectionHeading = ({ kicker, children, sub }) => (
-  <div className="mb-8">
-    {kicker && <p className="kicker mb-2">{kicker}</p>}
-    <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight heading-font">
-      {children}
-    </h2>
-    {sub && <p className="text-[#71717a] text-sm mt-2 max-w-md">{sub}</p>}
-  </div>
-);
-
-/* ================================================================
-   EXPERIENCE
-   ================================================================ */
-const ExperienceSection = () => (
-  <section id="experience" className="py-12">
-    <motion.div
-      variants={staggerContainer}
-      initial="hidden"
-      whileInView="visible"
-      viewport={sectionViewport}
-    >
-      <motion.div variants={fadeUp}>
-        <SectionHeading kicker="experience">Where I've worked</SectionHeading>
-      </motion.div>
-
-      <div className="flex flex-col gap-2">
-        {EXPERIENCES.map((exp, i) => {
-          const CardWrapper = exp.link ? motion.a : motion.div;
-          const wrapperProps = exp.link
-            ? { href: exp.link, target: "_blank", rel: "noreferrer" }
-            : {};
-          return (
-            <CardWrapper
-              key={exp.title}
-              variants={fadeUp}
-              custom={i}
-              {...wrapperProps}
-              className={`group p-5 sm:p-6 ${
-                exp.link ? "card-interactive" : "card-static"
-              }`}
-            >
-              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-1 mb-3">
-                <div>
-                  <h3 className="text-base font-bold text-[#f4f4f5] group-hover:text-[#7ab2ff] transition-colors duration-200 heading-font flex items-center gap-1.5">
-                    {exp.title}
-                    {exp.link && (
-                      <IconArrowUpRight size={14} className="text-[#5c5c66] opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
-                    )}
-                  </h3>
-                  <p className="text-[#a1a1aa] text-sm">{exp.company}</p>
-                </div>
-                <span className="text-[#5c5c66] text-xs font-mono shrink-0 mt-0.5 sm:mt-1">
-                  {exp.date}
-                </span>
-              </div>
-              <ul className="space-y-2">
-                {exp.bullets.map((b) => (
-                  <li key={b} className="text-[#a1a1aa] text-sm leading-relaxed flex items-start gap-2">
-                    <span className="w-1 h-1 rounded-full bg-[#2563eb] mt-2 shrink-0" />
-                    <span>{b}</span>
-                  </li>
-                ))}
-              </ul>
-            </CardWrapper>
-          );
-        })}
-      </div>
-
-      {/* Leadership */}
-      <motion.div variants={fadeUp} className="mt-6">
-        <p className="text-[10px] font-mono text-[#5c5c66] uppercase tracking-[0.15em] mb-2 px-5">
-          Leadership
-        </p>
-        <div className="card-static p-5 sm:p-6">
-          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-1 mb-2">
-            <div>
-              <h3 className="text-base font-bold text-[#f4f4f5] heading-font">
-                President
-              </h3>
-              <p className="text-[#a1a1aa] text-sm">
-                Computer Science Engineering Association (CSEA)
-              </p>
-            </div>
-            <span className="text-[#5c5c66] text-xs font-mono shrink-0">
-              Aug 2021 – May 2024
-            </span>
-          </div>
-          <p className="text-[#a1a1aa] text-sm leading-relaxed flex items-start gap-2">
-            <span className="w-1 h-1 rounded-full bg-[#2563eb] mt-2 shrink-0" />
-            Led initiatives serving 200+ students, organized technical workshops, and coordinated coding competitions
-          </p>
-        </div>
-      </motion.div>
-    </motion.div>
-  </section>
-);
-
-/* ================================================================
-   PROJECTS
-   ================================================================ */
-const FeaturedProjectCard = ({ project: p }) => {
-  const Wrapper = p.link ? "a" : "div";
-  const wrapperProps = p.link
-    ? { href: p.link, target: "_blank", rel: "noreferrer" }
-    : {};
-
-  return (
-    <Wrapper
-      {...wrapperProps}
-      className={`group card-static overflow-hidden flex flex-col h-full hover:border-[#2563eb]/40 ${
-        p.link ? "cursor-pointer" : "cursor-default"
-      }`}
-    >
-      {/* Media band */}
-      <div className="project-media">
-        <img src={asset(p.image)} alt={`${p.title} preview`} loading="lazy" />
-        {p.status && <span className="media-status">{p.status}</span>}
-      </div>
-
-      {/* Content */}
-      <div className="flex flex-col flex-1 p-5">
-        <h3 className="text-base font-bold text-[#f4f4f5] group-hover:text-[#7ab2ff] transition-colors duration-200 heading-font flex items-center gap-1.5">
-          {p.title}
-          {p.link && (
-            <IconArrowUpRight size={14} className="text-[#5c5c66] opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
-          )}
-        </h3>
-        <span className="text-[11px] font-mono text-[#5c5c66] mt-0.5">
-          {p.date} · {p.role}
-        </span>
-
-        <p className="text-[#a1a1aa] text-sm mt-2 leading-relaxed">{p.desc}</p>
-        <p className="text-[#71717a] text-xs mt-1.5 leading-relaxed">
-          <span className="text-[#7ab2ff] font-semibold uppercase tracking-wide text-[10px]">Impact</span>{" "}
-          {p.impact}
-        </p>
-
-        <div className="flex flex-wrap gap-1.5 mt-auto pt-4">
-          {p.tags.map((t) => (
-            <span key={t} className="tag tag-success">{t}</span>
-          ))}
-          {p.tech.map((t) => (
-            <span key={t} className="tag tag-accent">{t}</span>
-          ))}
-        </div>
-      </div>
-    </Wrapper>
-  );
-};
-
-const CompactProjectRow = ({ project: p }) => {
-  const Wrapper = p.link ? "a" : "div";
-  const wrapperProps = p.link
-    ? { href: p.link, target: "_blank", rel: "noreferrer" }
-    : {};
-
-  return (
-    <Wrapper
-      {...wrapperProps}
-      className={`group card-interactive p-4 sm:px-5 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 ${
-        p.link ? "" : "cursor-default"
-      }`}
-    >
-      <div className="flex-1 min-w-0">
-        <h3 className="text-sm font-bold text-[#f4f4f5] group-hover:text-[#7ab2ff] transition-colors duration-200 heading-font flex items-center gap-1.5">
-          {p.isWip && <span className="w-2 h-2 rounded-full bg-[#fbbf24] status-pulse shrink-0" />}
-          {p.title}
-          {p.link && (
-            <IconArrowUpRight size={13} className="text-[#5c5c66] opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
-          )}
-        </h3>
-        <p className="text-[#a1a1aa] text-xs mt-0.5 leading-relaxed">{p.desc}</p>
-      </div>
-      <div className="flex flex-wrap items-center gap-1.5 sm:justify-end sm:max-w-[45%]">
-        {p.isWip && <span className="tag tag-warning">In development</span>}
-        {p.tech.slice(0, 3).map((t) => (
-          <span key={t} className="tag tag-neutral">{t}</span>
-        ))}
-        <span className="text-[11px] font-mono text-[#5c5c66] sm:ml-2 whitespace-nowrap">{p.date}</span>
-      </div>
-    </Wrapper>
-  );
-};
-
-const ProjectsSection = () => {
-  const [activeCategory, setActiveCategory] = useState("All");
-
-  const matchesFilter = (p) =>
-    activeCategory === "All" || p.category.includes(activeCategory);
-
-  const featured = PROJECTS.filter((p) => p.featured && matchesFilter(p));
-  const others = PROJECTS.filter((p) => !p.featured && matchesFilter(p));
-
-  return (
-    <section id="projects" className="py-12">
-      <motion.div
-        variants={staggerContainer}
-        initial="hidden"
-        whileInView="visible"
-        viewport={sectionViewport}
-      >
-        <motion.div variants={fadeUp}>
-          <SectionHeading
-            kicker="projects"
-            sub="Shipped products first — production apps, live platforms, and the stack behind each."
-          >
-            What I've built
-          </SectionHeading>
-        </motion.div>
-
-        {/* Category filter */}
-        <motion.div variants={fadeUp} className="flex flex-wrap gap-2 mb-6" role="group" aria-label="Filter projects by category">
-          {PROJECT_CATEGORIES.map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setActiveCategory(cat)}
-              aria-pressed={activeCategory === cat}
-              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors duration-200 focus-ring cursor-pointer ${
-                activeCategory === cat
-                  ? "bg-[#2563eb] text-white"
-                  : "bg-[#111] text-[#a1a1aa] hover:bg-[#1a1a1a] hover:text-[#f4f4f5] border border-[#1e1e1e]"
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
-        </motion.div>
-
-        {/* Featured grid */}
-        {featured.length > 0 && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <AnimatePresence mode="popLayout">
-              {featured.map((p) => (
-                <motion.div
-                  key={p.title}
-                  layout
-                  initial={{ opacity: 0, scale: 0.97 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.97 }}
-                  transition={{ duration: 0.2 }}
-                  className="h-full"
-                >
-                  <FeaturedProjectCard project={p} />
-                </motion.div>
-              ))}
-            </AnimatePresence>
-          </div>
-        )}
-
-        {/* More builds */}
-        {others.length > 0 && (
-          <div className={featured.length > 0 ? "mt-8" : ""}>
-            <p className="text-[10px] font-mono text-[#5c5c66] uppercase tracking-[0.15em] mb-2 px-1">
-              More builds
-            </p>
-            <div className="flex flex-col gap-2">
-              <AnimatePresence mode="popLayout">
-                {others.map((p) => (
-                  <motion.div
-                    key={p.title}
-                    layout
-                    initial={{ opacity: 0, scale: 0.97 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.97 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <CompactProjectRow project={p} />
-                  </motion.div>
-                ))}
-              </AnimatePresence>
-            </div>
-          </div>
-        )}
-
-        {featured.length === 0 && others.length === 0 && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-10">
-            <p className="text-[#71717a]">No projects in this category yet.</p>
-          </motion.div>
-        )}
-
-        {/* Archive Link */}
-        <motion.div variants={fadeUp} className="mt-8">
-          <Link
-            to="/archive/projects"
-            className="inline-flex items-center gap-1.5 text-sm text-[#a1a1aa] hover:text-[#7ab2ff] font-semibold transition-colors duration-200 focus-ring group"
-          >
-            View full project archive
-            <IconArrowUpRight size={14} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform duration-200" />
-          </Link>
-        </motion.div>
-      </motion.div>
-    </section>
-  );
-};
-
-/* ================================================================
-   SKILLS
-   ================================================================ */
-const SkillsSection = () => (
-  <section id="skills" className="py-12">
-    <motion.div
-      variants={staggerContainer}
-      initial="hidden"
-      whileInView="visible"
-      viewport={sectionViewport}
-    >
-      <motion.div variants={fadeUp}>
-        <SectionHeading
-          kicker="skills"
-          sub="Organized by layer of the stack. Highlighted skills are the ones I reach for in production."
-        >
-          Full-stack toolkit
-        </SectionHeading>
-      </motion.div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {SKILL_GROUPS.map((group, i) => (
-          <motion.div
-            key={group.title}
-            variants={fadeUp}
-            custom={i}
-            className="card-static p-4 sm:p-5"
-          >
-            <h3 className="text-sm font-bold text-[#f4f4f5] mb-3 heading-font">
-              {group.title}
-            </h3>
-            <div className="flex flex-wrap gap-1.5">
-              {group.skills.map((s) => (
-                <span
-                  key={s}
-                  className={`tag ${group.core.includes(s) ? "tag-core" : "tag-neutral"}`}
-                >
-                  {s}
-                </span>
-              ))}
-            </div>
-          </motion.div>
-        ))}
-      </div>
-    </motion.div>
-  </section>
-);
-
-/* ================================================================
-   CERTIFICATIONS
-   ================================================================ */
-const CertificationsSection = () => (
-  <section id="certifications" className="py-12">
-    <motion.div
-      variants={staggerContainer}
-      initial="hidden"
-      whileInView="visible"
-      viewport={sectionViewport}
-    >
-      <motion.div variants={fadeUp}>
-        <SectionHeading kicker="certifications">Verified credentials</SectionHeading>
-      </motion.div>
-
-      <div className="flex flex-col gap-2">
-        {CERTIFICATIONS.map((c, i) => (
-          <motion.a
-            key={c.title}
-            variants={fadeUp}
-            custom={i}
-            href={c.link}
-            target="_blank"
-            rel="noreferrer"
-            className="group card-interactive p-5 sm:p-6"
-          >
-            <div className="flex items-start justify-between gap-2">
-              <div>
-                <h3 className="text-base font-bold text-[#f4f4f5] group-hover:text-[#7ab2ff] transition-colors duration-200 heading-font flex items-center gap-1.5">
-                  {c.title}
-                  <IconArrowUpRight size={14} className="text-[#5c5c66] opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
-                </h3>
-                <p className="text-xs text-[#71717a] font-medium mt-0.5">
-                  {c.issuer}
-                </p>
-              </div>
-              <span className="text-xs text-[#5c5c66] font-mono shrink-0">
-                {c.date}
-              </span>
-            </div>
-            <p className="text-[#a1a1aa] text-sm mt-2 leading-relaxed">
-              {c.desc}
-            </p>
-          </motion.a>
-        ))}
-      </div>
-    </motion.div>
-  </section>
-);
-
-/* ================================================================
-   EDUCATION
-   ================================================================ */
-const EducationSection = () => (
-  <section id="education" className="py-12">
-    <motion.div
-      variants={staggerContainer}
-      initial="hidden"
-      whileInView="visible"
-      viewport={sectionViewport}
-    >
-      <motion.div variants={fadeUp}>
-        <SectionHeading kicker="education">Academic background</SectionHeading>
-      </motion.div>
-
-      <div className="flex flex-col gap-3">
-        {EDUCATION.map((e, i) => (
-          <motion.div
-            key={e.degree}
-            variants={fadeUp}
-            custom={i}
-            className="card-static p-5 sm:p-6"
-          >
-            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-1 mb-3">
-              <div>
-                <h3 className="text-base font-bold text-[#f4f4f5] heading-font">
-                  {e.degree}
-                </h3>
-                <p className="text-sm text-[#7ab2ff] font-medium">{e.school}</p>
-              </div>
-              <span className="text-xs text-[#5c5c66] font-mono shrink-0 mt-0.5 sm:mt-1">
-                {e.date}
-              </span>
-            </div>
-            <ul className="space-y-2">
-              {e.bullets.map((b) => (
-                <li key={b} className="text-[#a1a1aa] text-sm leading-relaxed flex items-start gap-2">
-                  <span className="w-1 h-1 rounded-full bg-[#2563eb] mt-2 shrink-0" />
-                  <span>{b}</span>
-                </li>
-              ))}
-            </ul>
-          </motion.div>
-        ))}
-      </div>
-    </motion.div>
-  </section>
-);
-
-/* ================================================================
-   CONTACT
-   ================================================================ */
-const ContactSection = () => (
-  <section id="contact" className="py-12">
-    <motion.div
-      variants={staggerContainer}
-      initial="hidden"
-      whileInView="visible"
-      viewport={sectionViewport}
-    >
-      <motion.div variants={fadeUp}>
-        <SectionHeading
-          kicker="contact"
-          sub="Open to full-time software engineering roles. I usually reply within a day."
-        >
-          Let's build something
-        </SectionHeading>
-      </motion.div>
-
-      <motion.div variants={fadeUp} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <a
-          href={`mailto:${LINKS.email}`}
-          className="group flex items-center gap-4 p-5 rounded-xl border border-[#1e1e1e] hover:border-[#2563eb]/30 hover:bg-[#111] transition-all duration-200 focus-ring"
-        >
-          <div className="w-10 h-10 rounded-lg bg-[#2563eb]/10 flex items-center justify-center shrink-0 group-hover:bg-[#2563eb]/15 transition-colors duration-200">
-            <IconMail size={18} className="text-[#7ab2ff]" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-sm font-semibold text-[#f4f4f5]">Email</p>
-            <p className="text-xs text-[#71717a] truncate">{LINKS.email}</p>
-          </div>
-        </a>
-
-        <a
-          href={LINKS.linkedin}
-          target="_blank"
-          rel="noreferrer"
-          className="group flex items-center gap-4 p-5 rounded-xl border border-[#1e1e1e] hover:border-[#2563eb]/30 hover:bg-[#111] transition-all duration-200 focus-ring"
-        >
-          <div className="w-10 h-10 rounded-lg bg-[#2563eb]/10 flex items-center justify-center shrink-0 group-hover:bg-[#2563eb]/15 transition-colors duration-200">
-            <IconBrandLinkedin size={18} className="text-[#7ab2ff]" />
-          </div>
-          <div>
-            <p className="text-sm font-semibold text-[#f4f4f5]">LinkedIn</p>
-            <p className="text-xs text-[#71717a]">Let's connect</p>
-          </div>
-        </a>
-
-        <a
-          href={LINKS.github}
-          target="_blank"
-          rel="noreferrer"
-          className="group flex items-center gap-4 p-5 rounded-xl border border-[#1e1e1e] hover:border-[#2e2e2e] hover:bg-[#111] transition-all duration-200 focus-ring"
-        >
-          <div className="w-10 h-10 rounded-lg bg-[#1e1e1e] flex items-center justify-center shrink-0 group-hover:bg-[#222] transition-colors duration-200">
-            <IconBrandGithub size={18} className="text-[#f4f4f5]" />
-          </div>
-          <div>
-            <p className="text-sm font-semibold text-[#f4f4f5]">GitHub</p>
-            <p className="text-xs text-[#71717a]">Open source work</p>
-          </div>
-        </a>
-
-        <div className="flex items-center gap-4 p-5 rounded-xl border border-[#1e1e1e] bg-[#111]">
-          <div className="w-10 h-10 rounded-lg bg-[#34d399]/10 flex items-center justify-center shrink-0">
-            <div className="w-3 h-3 rounded-full bg-[#34d399] status-pulse" />
-          </div>
-          <div>
-            <p className="text-sm font-semibold text-[#f4f4f5]">Availability</p>
-            <p className="text-xs text-[#34d399]">Open to opportunities</p>
-          </div>
-        </div>
-      </motion.div>
-    </motion.div>
-  </section>
-);
 
 export default MainLayout;
