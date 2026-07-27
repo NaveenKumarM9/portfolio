@@ -1,7 +1,7 @@
 export const portfolio = {
   name: "Naveen Kumar",
   title: "Senior Java Full-Stack Engineer",
-  shortTitle: "Java Full-Stack Engineer",
+  shortTitle: "Full-Stack Developer",
   location: "USA",
   experience: "6+ years",
   image: "https://github.com/NaveenKumarM9.png?size=320",
